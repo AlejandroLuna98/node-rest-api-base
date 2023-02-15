@@ -1,37 +1,68 @@
 const { response } = require('express');
+const bcryptjs = require('bcryptjs');
 
-const getUsers = (req, res = response) => {
-  const {query} = req;
-  console.log(query)
+const User = require('../models/user');
+
+const getUsers = async (req, res = response) => {
+  const { limit = 5, offset = 0 } = req.query;
+  const query = { state: true };
+
+  const [total, users] = await Promise.all([
+    User.countDocuments(query),
+    User.find(query).limit(limit).skip(offset),
+  ]);
   res.json({
-    msg: 'get Api - Controller',
-    query
+    total,
+    users,
   });
 };
 
-const postUsers = (req, res = response) => {
+const postUsers = async (req, res = response) => {
+  const { name, password, email, role } = req.body;
+  const user = new User({ name, password, email, role });
 
-  const {nombre, edad} = req.body;
+  // encrypt pass
+  const salt = bcryptjs.genSaltSync();
+  user.password = bcryptjs.hashSync(password, salt);
 
-
+  // save
+  await user.save();
   res.json({
     msg: 'post Api - Controller',
-    nombre,
-    edad
+    user,
   });
 };
-const putUsers = (req, res = response) => {
 
-  const {id} = req.params
+const putUsers = async (req, res = response) => {
+  const { id } = req.params;
+  const { _id, password, google, email, ...info } = req.body;
+
+  //Validate DB
+  if (password) {
+    // encrypt pass
+    const salt = bcryptjs.genSaltSync();
+    info.password = bcryptjs.hashSync(password, salt);
+  }
+
+  const user = await User.findByIdAndUpdate(id, info, { new: true });
+
   res.json({
     msg: 'put Api - Controller',
-    id
+    user,
   });
 };
 
-const deleteUsers = (req, res = response) => {
+const deleteUsers = async (req, res = response) => {
+  const { id } = req.params;
+
+  // Delete physically
+  // const user = await User.findByIdAndDelete(id);
+
+  const user = await User.findByIdAndUpdate(id, { state: false });
+
   res.json({
     msg: 'delete Api - Controller',
+    user,
   });
 };
 
@@ -39,5 +70,5 @@ module.exports = {
   getUsers,
   postUsers,
   putUsers,
-  deleteUsers
+  deleteUsers,
 };

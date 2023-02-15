@@ -1,17 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 
+const { dbConnection } = require('../db/config');
 class Server {
   constructor() {
     this.app = express();
     this.port = process.env.PORT;
-    this.usersPath = '/api/users'
+    this.usersPath = '/api/users';
+
+    this.connectDB();
 
     // Middlewares
     this.middlewares();
-    
+
     //App routes
     this.routes();
+  }
+
+  //DB connection
+
+  async connectDB() {
+    await dbConnection();
   }
   middlewares() {
     // CORS
@@ -19,8 +28,8 @@ class Server {
 
     //parse and read body
 
-    this.app.use( express.json());
-    
+    this.app.use(express.json());
+
     //Public directory
     this.app.use(express.static('public'));
   }
@@ -31,7 +40,7 @@ class Server {
 
   listen() {
     this.app.listen(this.port, () =>
-      console.log(`Sevirdor corriendo en el puerto ${this.port}`)
+      console.log(`Server run in  ${this.port}`)
     );
   }
 }
